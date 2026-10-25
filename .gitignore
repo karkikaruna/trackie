@@ -1,0 +1,25 @@
+# Secrets: never commit a real .env
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+
+# Node
+node_modules/
+frontend/dist/
+frontend/coverage/
+*.log
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.tsbuildinfo

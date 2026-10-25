@@ -1,0 +1,47 @@
+# Full stack:   docker compose up --build        -> http://localhost:8080
+# Just the DB:  docker compose up -d db          (used by `make db` for local development)
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: shiptrack
+      POSTGRES_PASSWORD: shiptrack
+      POSTGRES_DB: shiptrack
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shiptrack -d shiptrack"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_ENV: development # use "production" behind HTTPS (enables Secure cookies + strict secret checks)
+      DATABASE_URL: postgresql+psycopg://shiptrack:shiptrack@db:5432/shiptrack
+      # Compose reads this from your shell or the root .env file; `make env` generates one.
+      SESSION_SECRET_KEY: ${SESSION_SECRET_KEY:?Run `make env` first (or export SESSION_SECRET_KEY)}
+      FRONTEND_URL: http://localhost:8080
+      TRUST_PROXY_HEADERS: "true" # we are behind the nginx container
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-}
+    expose:
+      - "8000"
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+
+volumes:
+  pgdata:
